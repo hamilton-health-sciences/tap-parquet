@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tap-parquet"
-version = "0.0.1"
+version = "0.1.0"
 description = "`tap-parquet` is Singer tap for Parquet, built with the Singer SDK."
 authors = ["Aaron Steers <aj@meltano.com>"]
 license = "Apache 2.0"
