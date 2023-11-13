@@ -15,11 +15,6 @@ pyarrow = "^14.0.1"
 pytest = "^7.4.3"
 black = {version = "^23.11.0", allow-prereleases = true}
 
-[[tool.poetry.source]]
-name = "fpho"
-url = "https://files.pythonhosted.org"
-priority = "primary"
-
 [build-system]
 requires = ["poetry-core>=1.8.1"]
 build-backend = "poetry.core.masonry.api"
