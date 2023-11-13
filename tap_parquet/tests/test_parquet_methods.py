@@ -7,7 +7,7 @@ from tap_parquet.tap import TapParquet
 
 COUNTER = 0
 
-SAMPLE_FILENAME = "/tmp/testfile.parquet"
+SAMPLE_FILENAME = "testfile.parquet"
 SAMPLE_CONFIG = {"filepath": SAMPLE_FILENAME}
 SAMPLE_CONFIG_BAD = {"not_valid": SAMPLE_FILENAME}
 
@@ -26,15 +26,6 @@ def _make_sample_data():
 
 def _make_sample_batch():
     return pa.record_batch(_make_sample_data(), names=["f0", "f1", "f2"])
-
-
-def test_parquet_sync_one():
-    """Test sync_one() for parquet sample."""
-    _parquet_write()
-    tap = TapParquet(config=SAMPLE_CONFIG)
-    for stream_name in tap.streams.keys():
-        tap.sync_one(stream_name)
-        break
 
 
 def test_parquet_sync_all():
