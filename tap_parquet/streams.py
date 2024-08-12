@@ -57,23 +57,37 @@ class ParquetStream(Stream):
         This is evaluated prior to any records being retrieved.
         """
         properties: List[Property] = []
-        parquet_schema = pq.ParquetFile(self.filepath).schema_arrow
+        parquet_dataset = pq.ParquetDataset(self.filepath)
+        parquet_schema = parquet_dataset.schema
         for i in range(len(parquet_schema.names)):
             name, dtype = parquet_schema.names[i], parquet_schema.types[i]
             properties.append(Property(name, get_jsonschema_type(str(dtype))))
         return PropertiesList(*properties).to_dict()
 
+
     def get_records(self, partition: Optional[dict] = None) -> Iterable[dict]:
         """Return a generator of row-type dictionary objects."""
         try:
-            parquet_file = pq.ParquetFile(self.filepath)
+            parquet_dataset = pq.ParquetDataset(self.filepath)
         except Exception as ex:
-            raise IOError(f"Could not read from parquet file '{self.filepath}': {ex}")
-        for i in range(parquet_file.num_row_groups):
-            table = parquet_file.read_row_group(i)
-            for batch in table.to_batches():
-                for row in zip(*batch.columns):
-                    yield {
-                        table.column_names[i]: val.as_py()
-                        for i, val in enumerate(row, start=0)
-                    }
+            raise IOError(f"Could not read from parquet dataset '{self.filepath}': {ex}")
+        
+        table = parquet_dataset.read()
+        
+        # Convert the index to a column
+        if table.schema.metadata and b'pandas' in table.schema.metadata:
+            import json
+            pandas_metadata = json.loads(table.schema.metadata[b'pandas'])
+            if 'index_columns' in pandas_metadata:
+                index_columns = pandas_metadata['index_columns']
+                for index_column in index_columns:
+                    if isinstance(index_column, str):
+                        table = table.append_column(index_column, table.column(index_column))
+    
+
+        for batch in table.to_batches():
+            for row in zip(*batch.columns):
+                yield {
+                    table.column_names[i]: val.as_py()
+                    for i, val in enumerate(row, start=0)
+                }
