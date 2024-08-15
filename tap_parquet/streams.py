@@ -1,19 +1,19 @@
 """Stream class for tap-parquet."""
 
-import requests
+from __future__ import annotations
 
-from copy import deepcopy
+from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, Optional, Union, List, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
+from singer_sdk import Tap
+from singer_sdk._singerlib.schema import Schema
 from singer_sdk.streams import Stream
 from singer_sdk.typing import (
-    ArrayType,
     BooleanType,
     DateTimeType,
     IntegerType,
     NumberType,
-    ObjectType,
     PropertiesList,
     Property,
     StringType,
@@ -21,8 +21,12 @@ from singer_sdk.typing import (
 )
 
 import pyarrow.parquet as pq
+import json
 
 SCHEMAS_DIR = Path(__file__).parent / Path("./schemas")
+
+if TYPE_CHECKING:
+    from singer_sdk.helpers.types import Context
 
 
 def get_jsonschema_type(ansi_type: str) -> JSONTypeHelper:
@@ -45,35 +49,54 @@ def get_jsonschema_type(ansi_type: str) -> JSONTypeHelper:
 class ParquetStream(Stream):
     """Stream class for Parquet streams."""
 
-    @property
-    def filepath(self) -> str:
-        """Return the filepath for the parquet stream."""
-        return self.config["filepath"]
+    def __init__(self, tap: Tap, path: str | PathLike, schema: str | PathLike | dict[str, Any] | Schema | None = None, name: str | None = None) -> None:
+        """Initialize the stream.
 
-    @property
-    def schema(self) -> dict:
+        Args:
+            tap: The tap for this stream.
+            schema: The schema for this stream.
+            name: The name of the stream.
+            path: The path to the parquet dataset.
+        """
+        self.path = path
+
+        try:
+            self.dataset = pq.ParquetDataset(self.path)
+        except Exception as e:
+            raise IOError(f"Error reading Parquet dataset at '{self.path}': {e}")
+
+        if not schema:
+            schema = self.discover_schema()
+
+        super().__init__(tap, schema, name)
+        
+        
+    def discover_schema(self) -> dict:
         """Dynamically detect the json schema for the stream.
 
         This is evaluated prior to any records being retrieved.
         """
-        properties: List[Property] = []
-        parquet_schema = pq.ParquetFile(self.filepath).schema_arrow
+        properties: list[Property] = []
+        
+        parquet_schema = self.dataset.schema
         for i in range(len(parquet_schema.names)):
             name, dtype = parquet_schema.names[i], parquet_schema.types[i]
             properties.append(Property(name, get_jsonschema_type(str(dtype))))
+                
         return PropertiesList(*properties).to_dict()
 
-    def get_records(self, partition: Optional[dict] = None) -> Iterable[dict]:
-        """Return a generator of row-type dictionary objects."""
-        try:
-            parquet_file = pq.ParquetFile(self.filepath)
-        except Exception as ex:
-            raise IOError(f"Could not read from parquet file '{self.filepath}': {ex}")
-        for i in range(parquet_file.num_row_groups):
-            table = parquet_file.read_row_group(i)
-            for batch in table.to_batches():
-                for row in zip(*batch.columns):
-                    yield {
-                        table.column_names[i]: val.as_py()
-                        for i, val in enumerate(row, start=0)
-                    }
+
+    def get_records(
+        self,
+        context: Context | None,  # noqa: ARG002
+    ) -> Iterable[dict]:
+        """Return a generator of record-type dictionary objects."""
+        
+        table = self.dataset.read()
+
+        for batch in table.to_batches():
+            for row in zip(*batch.columns):
+                yield {
+                    table.column_names[i]: val.as_py()
+                    for i, val in enumerate(row, start=0)
+                }
