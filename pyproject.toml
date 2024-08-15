@@ -1,24 +1,76 @@
 [tool.poetry]
-name = "tap-parquet"
-version = "0.1.0"
-description = "`tap-parquet` is Singer tap for Parquet, built with the Singer SDK."
-authors = ["Aaron Steers <aj@meltano.com>"]
-license = "Apache 2.0"
+name = "createhealth.ai-tap-parquet"
+version = "0.0.1"
+description = "Singer tap for Parquet, built with the Meltano Singer SDK."
+readme = "README.md"
+authors = ["Joel Kemppainen <kemppainen@hhsc.ca>"]
+keywords = [
+    "ELT",
+    "Parquet",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+license = "Apache-2.0"
+packages = [
+    { include = "tap_parquet" },
+]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-requests = "^2.31.0"
-singer-sdk = "^0.33.1"
-pyarrow = "^14.0.1"
+python = ">=3.8"
+importlib-resources = { version = "==6.4.*", python = "<3.9" }
+singer-sdk = { version="~=0.39.1", extras = [] }
+fs-s3fs = { version = "~=1.1.1", optional = true }
+numpy = { version = "==1.26.4", python = ">=3.9" }
+pyarrow = { version = "^14.0" }
 
-[tool.poetry.dev-dependencies]
-pytest = "^7.4.3"
-black = {version = "^23.11.0", allow-prereleases = true}
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8"
+singer-sdk = { version="~=0.39.1", extras = ["testing"] }
+
+[tool.poetry.extras]
+s3 = ["fs-s3fs"]
+
+[tool.pytest.ini_options]
+addopts = '--durations=10'
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+
+[tool.ruff]
+src = ["tap_parquet"]
+target-version = "py38"
+
+[tool.ruff.lint]
+ignore = [
+    "ANN101",  # missing-type-self
+    "ANN102",  # missing-type-cls
+    "COM812",  # missing-trailing-comma
+    "ISC001",  # single-line-implicit-string-concatenation
+]
+select = ["ALL"]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["tap_parquet"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [build-system]
-requires = ["poetry-core>=1.8.1"]
+requires = ["poetry-core==1.9.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 # CLI declaration
-tap-parquet = 'tap_parquet.tap:cli'
+tap-parquet = 'tap_parquet.tap:TapParquet.cli'
