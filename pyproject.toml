@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "createhealth.ai-tap-parquet"
-version = "0.0.1"
+version = "0.1.1"
 description = "Singer tap for Parquet, built with the Meltano Singer SDK."
 readme = "README.md"
-authors = ["Joel Kemppainen <kemppainen@hhsc.ca>"]
+authors = ["Aaron Steers <aj@meltano.com>", "Joel Kemppainen <kemppainen@hhsc.ca>"]
 keywords = [
     "ELT",
     "Parquet",
@@ -26,17 +26,15 @@ packages = [
 python = ">=3.8"
 importlib-resources = { version = "==6.4.*", python = "<3.9" }
 singer-sdk = { version="~=0.39.1", extras = [] }
-fs-s3fs = { version = "~=1.1.1", optional = true }
 numpy = { version = "==1.26.4", python = ">=3.9" }
-pyarrow = { version = "^14.0" }
+pyarrow = { version = "^14.0.1" }
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=8"
+black = "^24.8.0"
 singer-sdk = { version="~=0.39.1", extras = ["testing"] }
 
-[tool.poetry.extras]
-s3 = ["fs-s3fs"]
 
 [tool.pytest.ini_options]
 addopts = '--durations=10'
