@@ -1,3 +1,10 @@
+# Secrets and internal config files
+**/.secrets/*
+
+# Ignore meltano internal cache and sqlite systemdb
+
+.meltano/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -127,5 +134,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-.idea/
+
+# Parquet files
 *.parquet

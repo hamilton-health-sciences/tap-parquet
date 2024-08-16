@@ -1,24 +1,13 @@
 """Parquet tap class."""
 
-from typing import List
+from __future__ import annotations
 
-import pyarrow.parquet as pq
-
-from singer_sdk import Tap, Stream
-from singer_sdk.typing import (
-    ArrayType,
-    BooleanType,
-    DateTimeType,
-    IntegerType,
-    NumberType,
-    ObjectType,
-    PropertiesList,
-    Property,
-    StringType,
-    JSONTypeHelper,
-)
+from singer_sdk import Tap
+from singer_sdk.typing import Property, PropertiesList, ArrayType, StringType
 
 from tap_parquet.streams import ParquetStream
+import os
+import re
 
 
 class TapParquet(Tap):
@@ -27,21 +16,28 @@ class TapParquet(Tap):
     name = "tap-parquet"
 
     config_jsonschema = PropertiesList(
-        Property("start_date", DateTimeType),
-        Property("filepath", StringType, required=True),
+        Property(
+            "paths",
+            ArrayType(StringType),
+            required=True,
+            description="Paths to Parquet Datasets",
+        ),
     ).to_dict()
 
-    def discover_streams(self) -> List[Stream]:
+    def _sanitize_filename(self, path: str) -> str:
+        """Return a sanitized version of the filename suitable for a db table name."""
+        filename = os.path.splitext(os.path.basename(path))[0]
+        sanitized_filename = re.sub(r'[^a-zA-Z0-9_]', '_', filename)
+        return sanitized_filename
+
+
+    def discover_streams(self) -> list[ParquetStream]:
         """Return a list of discovered streams."""
         return [
-            ParquetStream(
-                tap=self,
-                name=filename,
-            )
-            for filename in [self.config["filepath"]]
+            ParquetStream(self, name=self._sanitize_filename(path), path=path)
+            for path in self.config["paths"]
         ]
 
 
-# CLI Execution:
-
-cli = TapParquet.cli
+if __name__ == "__main__":
+    TapParquet.cli()
